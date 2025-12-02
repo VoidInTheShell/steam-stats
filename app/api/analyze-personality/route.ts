@@ -154,19 +154,17 @@ ${reviewsSection}
     const response = await openai.responses.create({
       model: "gpt-5.1",
       instructions:
-        "你是一位专业的MBTI分析师和游戏心理学专家，擅长通过游戏行为分析人格类型。你的分析必须有深度、有洞察力，并且大量引用用户实际游玩的游戏作为证据。选择代表游戏时，必须确保多样性——从不同类型的游戏中各选一款，避免选择类型相似的游戏。请严格按照要求的JSON格式回复。",
+        "你是一位专业的MBTI分析师和游戏心理学专家，擅长通过游戏行为分析人格类型。你的分析必须有深度、有洞察力，并且大量引用用户实际游玩的游戏作为证据。选择代表游戏时，必须确保多样性——从不同类型的游戏中各选一款，避免选择类型相似的游戏。",
       input: prompt,
+      text: {
+        format: { type: "json_object" },
+      },
     });
 
     const responseText = response.output_text || "";
 
-    // Parse JSON from response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Failed to parse LLM response: " + responseText);
-    }
-
-    const result = JSON.parse(jsonMatch[0]);
+    // JSON mode guarantees valid JSON output
+    const result = JSON.parse(responseText);
 
     return NextResponse.json(result);
   } catch (error) {

@@ -181,11 +181,15 @@ export default function GamerMBTI({ games, genreData }: GamerMBTIProps) {
     return map;
   }, [games]);
 
-  // Load from cache on mount
+  // Load from cache on mount (only when games are loaded)
   useEffect(() => {
     const loadFromCache = async () => {
-      if (!steamId) {
-        setLoadingCache(false);
+      // Wait for steamId AND games to be loaded before checking cache
+      if (!steamId || games.length === 0) {
+        // Don't set loadingCache to false yet if games aren't loaded
+        if (!steamId) {
+          setLoadingCache(false);
+        }
         return;
       }
 
@@ -205,7 +209,7 @@ export default function GamerMBTI({ games, genreData }: GamerMBTIProps) {
     };
 
     loadFromCache();
-  }, [steamId, gamesHash]);
+  }, [steamId, gamesHash, games.length]);
 
   const analyzePersonality = async (forceRefresh = false) => {
     setLoading(true);
@@ -218,9 +222,10 @@ export default function GamerMBTI({ games, genreData }: GamerMBTIProps) {
 
     try {
       // Use reviews from Zustand store (already fetched globally)
-      const reviews = storeReviews.length > 0 
-        ? { reviews: storeReviews, totalReviews: storeReviews.length }
-        : null;
+      const reviews =
+        storeReviews.length > 0
+          ? { reviews: storeReviews, totalReviews: storeReviews.length }
+          : null;
 
       const res = await fetch("/api/analyze-personality", {
         method: "POST",

@@ -200,9 +200,20 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
 
     // Convert images to data URLs for html-to-image compatibility
     useEffect(() => {
+      // Helper to check if URL is external
+      const isExternalUrl = (url: string): boolean => {
+        return url.startsWith("http://") || url.startsWith("https://");
+      };
+
+      // Load image and convert to data URL
+      // For external images, use our proxy to avoid CORS issues
       const loadImage = async (url: string): Promise<string> => {
         try {
-          const response = await fetch(url);
+          const fetchUrl = isExternalUrl(url)
+            ? `/api/image-proxy?url=${encodeURIComponent(url)}`
+            : url;
+
+          const response = await fetch(fetchUrl);
           const blob = await response.blob();
           return new Promise((resolve) => {
             const reader = new FileReader();

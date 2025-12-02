@@ -56,7 +56,13 @@ const db = new Dexie("SteamStatsDB") as Dexie & {
   reviews: EntityTable<ReviewsCache, "steamId">;
 };
 
-// Define schema - bump version when adding new stores
+// Define schema versions - Dexie requires all versions for proper migration
+db.version(1).stores({
+  games: "steamId",
+  personality: "steamId",
+  gameDetails: "appid",
+});
+
 db.version(2).stores({
   games: "steamId",
   personality: "steamId",
@@ -135,23 +141,32 @@ export async function getCachedPersonality(
   currentGamesHash: string
 ): Promise<MBTIResult | null> {
   try {
+    console.log("[Cache] Looking for MBTI cache, steamId:", steamId, "hash:", currentGamesHash);
     const cached = await db.personality.get(steamId);
-    if (!cached) return null;
+    if (!cached) {
+      console.log("[Cache] No MBTI cache found");
+      return null;
+    }
+
+    console.log("[Cache] Found MBTI cache, stored hash:", cached.gamesHash);
 
     const isExpired =
       Date.now() - cached.timestamp > PERSONALITY_CACHE_DURATION;
     if (isExpired) {
+      console.log("[Cache] MBTI cache expired");
       await db.personality.delete(steamId);
       return null;
     }
 
     // Check if games have changed significantly
-    if (cached.gamesHash !== currentGamesHash) {
-      console.log("Games changed, invalidating personality cache");
+    // Don't delete cache if currentGamesHash is empty (games not loaded yet)
+    if (currentGamesHash && cached.gamesHash !== currentGamesHash) {
+      console.log("[Cache] Games changed, invalidating personality cache");
       await db.personality.delete(steamId);
       return null;
     }
 
+    console.log("[Cache] MBTI cache hit!");
     return cached.result;
   } catch (error) {
     console.error("Error reading personality from cache:", error);
@@ -165,12 +180,15 @@ export async function setCachedPersonality(
   topGames: Array<{ name: string; hours: number }>
 ): Promise<void> {
   try {
+    const gamesHash = generateGamesHash(topGames);
+    console.log("[Cache] Saving MBTI result for", steamId, "hash:", gamesHash);
     await db.personality.put({
       steamId,
       result,
-      gamesHash: generateGamesHash(topGames),
+      gamesHash,
       timestamp: Date.now(),
     });
+    console.log("[Cache] MBTI result saved successfully");
   } catch (error) {
     console.error("Error writing personality to cache:", error);
   }
