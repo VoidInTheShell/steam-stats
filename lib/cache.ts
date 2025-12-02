@@ -421,6 +421,15 @@ export async function clearReviewsCache(steamId: string): Promise<void> {
 // Clear Cache Functions
 // ============================================
 
+export async function clearGameDetailsCache(): Promise<void> {
+  try {
+    await db.gameDetails.clear();
+    console.log("[Cache] Game details cache cleared");
+  } catch (error) {
+    console.error("Error clearing game details cache:", error);
+  }
+}
+
 export async function clearCache(steamId?: string): Promise<void> {
   try {
     if (steamId) {

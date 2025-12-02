@@ -20,8 +20,14 @@ import {
   Loader2,
   Sparkles,
   ThumbsDown,
+  RefreshCw,
 } from "lucide-react";
-import { getCachedGameDetails, setCachedGameDetails } from "@/lib/cache";
+import { Button } from "@/components/ui/button";
+import {
+  getCachedGameDetails,
+  setCachedGameDetails,
+  clearGameDetailsCache,
+} from "@/lib/cache";
 
 interface GameWithPrice extends SteamGame {
   price?: number;
@@ -58,6 +64,13 @@ export default function ValueAnalysis({ games }: ValueAnalysisProps) {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [currency, setCurrency] = useState("USD");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = async () => {
+    await clearGameDetailsCache();
+    setGamesWithPrices([]);
+    setRefreshKey((k) => k + 1);
+  };
 
   useEffect(() => {
     // Skip if no games
@@ -161,7 +174,7 @@ export default function ValueAnalysis({ games }: ValueAnalysisProps) {
     return () => {
       cancelled = true;
     };
-  }, [games.length]); // Use games.length to avoid unnecessary re-runs
+  }, [games.length, refreshKey]); // Use games.length to avoid unnecessary re-runs, refreshKey to force refresh
 
   const stats = useMemo(() => {
     const withPrices = gamesWithPrices.filter(
@@ -248,6 +261,27 @@ export default function ValueAnalysis({ games }: ValueAnalysisProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Value Analysis</h2>
+          <p className="text-sm text-muted-foreground">
+            Based on current Steam store prices ({currency})
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={loading}
+        >
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
+          刷新价格
+        </Button>
+      </div>
+
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
