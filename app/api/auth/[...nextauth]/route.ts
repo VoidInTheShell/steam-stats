@@ -17,7 +17,6 @@ async function handler(
         if (session?.user) {
           // @ts-expect-error - steamId is not in the default types
           session.user.steamId = token.sub?.split("/").pop() || token.sub;
-          // Steam provider usually puts the steamid in sub, or we can get it from profile
         }
         return session;
       },

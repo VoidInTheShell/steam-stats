@@ -1,8 +1,22 @@
-import { openDB, DBSchema, IDBPDatabase } from "idb";
+import Dexie, { type EntityTable } from "dexie";
 import { SteamGame } from "@/app/types/steam";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MBTIResult = any; // Flexible type for MBTI result
+
+// Database entity interfaces
+interface GamesCache {
+  steamId: string;
+  games: SteamGame[];
+  timestamp: number;
+}
+
+interface PersonalityCache {
+  steamId: string;
+  result: MBTIResult;
+  gamesHash: string;
+  timestamp: number;
+}
 
 interface GameDetails {
   appid: number;
@@ -13,77 +27,42 @@ interface GameDetails {
   timestamp: number;
 }
 
-interface SteamStatsDB extends DBSchema {
-  games: {
-    key: string; // steamId
-    value: {
-      steamId: string;
-      games: SteamGame[];
-      timestamp: number;
-    };
-  };
-  personality: {
-    key: string; // steamId
-    value: {
-      steamId: string;
-      result: MBTIResult;
-      gamesHash: string; // Hash of top games to detect changes
-      timestamp: number;
-    };
-  };
-  gameDetails: {
-    key: number; // appid
-    value: GameDetails;
-  };
-}
-
-const DB_NAME = "steam-stats-cache";
-const DB_VERSION = 3; // Bumped version for gameDetails store
+// Cache durations
 const GAMES_CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
 const PERSONALITY_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7; // 7 days
 const GAME_DETAILS_CACHE_DURATION = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-let dbPromise: Promise<IDBPDatabase<SteamStatsDB>> | null = null;
+// Define the database with Dexie
+const db = new Dexie("SteamStatsDB") as Dexie & {
+  games: EntityTable<GamesCache, "steamId">;
+  personality: EntityTable<PersonalityCache, "steamId">;
+  gameDetails: EntityTable<GameDetails, "appid">;
+};
 
-function getDB() {
-  if (!dbPromise) {
-    dbPromise = openDB<SteamStatsDB>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        if (oldVersion < 1) {
-          if (!db.objectStoreNames.contains("games")) {
-            db.createObjectStore("games", { keyPath: "steamId" });
-          }
-        }
-        if (oldVersion < 2) {
-          if (!db.objectStoreNames.contains("personality")) {
-            db.createObjectStore("personality", { keyPath: "steamId" });
-          }
-        }
-        if (oldVersion < 3) {
-          if (!db.objectStoreNames.contains("gameDetails")) {
-            db.createObjectStore("gameDetails", { keyPath: "appid" });
-          }
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
+// Define schema
+db.version(1).stores({
+  games: "steamId",
+  personality: "steamId",
+  gameDetails: "appid",
+});
 
-// Games cache functions
-export async function getCachedGames(steamId: string): Promise<SteamGame[] | null> {
+// ============================================
+// Games Cache Functions
+// ============================================
+
+export async function getCachedGames(
+  steamId: string
+): Promise<SteamGame[] | null> {
   try {
-    const db = await getDB();
-    const cached = await db.get("games", steamId);
-    
+    const cached = await db.games.get(steamId);
     if (!cached) return null;
-    
+
     const isExpired = Date.now() - cached.timestamp > GAMES_CACHE_DURATION;
     if (isExpired) {
-      await db.delete("games", steamId);
+      await db.games.delete(steamId);
       return null;
     }
-    
+
     return cached.games;
   } catch (error) {
     console.error("Error reading games from cache:", error);
@@ -91,10 +70,12 @@ export async function getCachedGames(steamId: string): Promise<SteamGame[] | nul
   }
 }
 
-export async function setCachedGames(steamId: string, games: SteamGame[]): Promise<void> {
+export async function setCachedGames(
+  steamId: string,
+  games: SteamGame[]
+): Promise<void> {
   try {
-    const db = await getDB();
-    await db.put("games", {
+    await db.games.put({
       steamId,
       games,
       timestamp: Date.now(),
@@ -104,52 +85,55 @@ export async function setCachedGames(steamId: string, games: SteamGame[]): Promi
   }
 }
 
-export async function getCacheInfo(steamId: string): Promise<{ cached: boolean; age: number | null }> {
+export async function getCacheInfo(
+  steamId: string
+): Promise<{ cached: boolean; age: number | null }> {
   try {
-    const db = await getDB();
-    const cached = await db.get("games", steamId);
-    
+    const cached = await db.games.get(steamId);
     if (!cached) {
       return { cached: false, age: null };
     }
-    
-    const age = Date.now() - cached.timestamp;
-    return { cached: true, age };
+    return { cached: true, age: Date.now() - cached.timestamp };
   } catch {
     return { cached: false, age: null };
   }
 }
 
-// Personality cache functions
-function generateGamesHash(games: Array<{ name: string; hours: number }>): string {
-  // Create a simple hash based on top games to detect library changes
-  return games.slice(0, 10).map(g => `${g.name}:${g.hours}`).join("|");
+// ============================================
+// Personality Cache Functions
+// ============================================
+
+function generateGamesHash(
+  games: Array<{ name: string; hours: number }>
+): string {
+  return games
+    .slice(0, 10)
+    .map((g) => `${g.name}:${g.hours}`)
+    .join("|");
 }
 
 export async function getCachedPersonality(
-  steamId: string, 
+  steamId: string,
   currentGamesHash: string
 ): Promise<MBTIResult | null> {
   try {
-    const db = await getDB();
-    const cached = await db.get("personality", steamId);
-    
+    const cached = await db.personality.get(steamId);
     if (!cached) return null;
-    
-    // Check if cache is expired
-    const isExpired = Date.now() - cached.timestamp > PERSONALITY_CACHE_DURATION;
+
+    const isExpired =
+      Date.now() - cached.timestamp > PERSONALITY_CACHE_DURATION;
     if (isExpired) {
-      await db.delete("personality", steamId);
+      await db.personality.delete(steamId);
       return null;
     }
-    
+
     // Check if games have changed significantly
     if (cached.gamesHash !== currentGamesHash) {
       console.log("Games changed, invalidating personality cache");
-      await db.delete("personality", steamId);
+      await db.personality.delete(steamId);
       return null;
     }
-    
+
     return cached.result;
   } catch (error) {
     console.error("Error reading personality from cache:", error);
@@ -158,13 +142,12 @@ export async function getCachedPersonality(
 }
 
 export async function setCachedPersonality(
-  steamId: string, 
+  steamId: string,
   result: MBTIResult,
   topGames: Array<{ name: string; hours: number }>
 ): Promise<void> {
   try {
-    const db = await getDB();
-    await db.put("personality", {
+    await db.personality.put({
       steamId,
       result,
       gamesHash: generateGamesHash(topGames),
@@ -175,17 +158,15 @@ export async function setCachedPersonality(
   }
 }
 
-export async function getPersonalityCacheInfo(steamId: string): Promise<{ cached: boolean; age: number | null }> {
+export async function getPersonalityCacheInfo(
+  steamId: string
+): Promise<{ cached: boolean; age: number | null }> {
   try {
-    const db = await getDB();
-    const cached = await db.get("personality", steamId);
-    
+    const cached = await db.personality.get(steamId);
     if (!cached) {
       return { cached: false, age: null };
     }
-    
-    const age = Date.now() - cached.timestamp;
-    return { cached: true, age };
+    return { cached: true, age: Date.now() - cached.timestamp };
   } catch {
     return { cached: false, age: null };
   }
@@ -193,45 +174,30 @@ export async function getPersonalityCacheInfo(steamId: string): Promise<{ cached
 
 export async function clearPersonalityCache(steamId: string): Promise<void> {
   try {
-    const db = await getDB();
-    await db.delete("personality", steamId);
+    await db.personality.delete(steamId);
   } catch (error) {
     console.error("Error clearing personality cache:", error);
   }
 }
 
-// Clear all caches
-export async function clearCache(steamId?: string): Promise<void> {
-  try {
-    const db = await getDB();
-    if (steamId) {
-      await db.delete("games", steamId);
-      await db.delete("personality", steamId);
-    } else {
-      await db.clear("games");
-      await db.clear("personality");
-      await db.clear("gameDetails");
-    }
-  } catch (error) {
-    console.error("Error clearing cache:", error);
-  }
-}
+// ============================================
+// Game Details Cache Functions
+// ============================================
 
-// Game details cache functions
-export async function getCachedGameDetails(appid: number): Promise<GameDetails | null> {
+export async function getCachedGameDetails(
+  appid: number
+): Promise<GameDetails | null> {
   try {
-    const db = await getDB();
-    const cached = await db.get("gameDetails", appid);
-    
+    const cached = await db.gameDetails.get(appid);
     if (!cached) return null;
-    
-    // Check if cache is expired
-    const isExpired = Date.now() - cached.timestamp > GAME_DETAILS_CACHE_DURATION;
+
+    const isExpired =
+      Date.now() - cached.timestamp > GAME_DETAILS_CACHE_DURATION;
     if (isExpired) {
-      await db.delete("gameDetails", appid);
+      await db.gameDetails.delete(appid);
       return null;
     }
-    
+
     return cached;
   } catch (error) {
     console.error("Error reading game details from cache:", error);
@@ -247,8 +213,7 @@ export async function setCachedGameDetails(
   metacritic: { score: number } | null
 ): Promise<void> {
   try {
-    const db = await getDB();
-    await db.put("gameDetails", {
+    await db.gameDetails.put({
       appid,
       genres,
       price,
@@ -261,22 +226,134 @@ export async function setCachedGameDetails(
   }
 }
 
-export async function getCachedGameDetailsMany(appids: number[]): Promise<Map<number, GameDetails>> {
+export async function getCachedGameDetailsMany(
+  appids: number[]
+): Promise<Map<number, GameDetails>> {
   const result = new Map<number, GameDetails>();
   try {
-    const db = await getDB();
     const now = Date.now();
-    
-    for (const appid of appids) {
-      const cached = await db.get("gameDetails", appid);
-      if (cached && now - cached.timestamp < GAME_DETAILS_CACHE_DURATION) {
-        result.set(appid, cached);
+
+    // Dexie supports bulkGet for efficient batch reads
+    const cached = await db.gameDetails.bulkGet(appids);
+
+    cached.forEach((item) => {
+      if (item && now - item.timestamp < GAME_DETAILS_CACHE_DURATION) {
+        result.set(item.appid, item);
       }
-    }
+    });
   } catch (error) {
     console.error("Error reading game details batch from cache:", error);
   }
   return result;
+}
+
+// Batch fetch and cache game details
+export async function fetchAndCacheGameDetails(
+  appids: number[]
+): Promise<Map<number, GameDetails>> {
+  // First, check which ones we already have cached
+  const cached = await getCachedGameDetailsMany(appids);
+  const uncachedAppids = appids.filter((id) => !cached.has(id));
+
+  if (uncachedAppids.length === 0) {
+    console.log(`[Cache] All ${appids.length} games already cached`);
+    return cached;
+  }
+
+  console.log(
+    `[Cache] ${cached.size} games cached, fetching ${uncachedAppids.length} more`
+  );
+
+  // Fetch uncached games in batch
+  try {
+    const response = await fetch("/api/steam/apps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appids: uncachedAppids }),
+    });
+
+    if (!response.ok) {
+      console.error(`[Cache] Batch fetch failed: ${response.status}`);
+      return cached;
+    }
+
+    const data = await response.json();
+    const now = Date.now();
+    const toCache: GameDetails[] = [];
+
+    // Prepare batch insert
+    for (const [appidStr, gameData] of Object.entries(data.results)) {
+      const appid = parseInt(appidStr);
+      if (gameData) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const game = gameData as any;
+        const details: GameDetails = {
+          appid,
+          genres:
+            game.genres?.map((g: { description: string }) => g.description) ||
+            [],
+          price: game.price_overview?.final || null,
+          developers: game.developers || [],
+          metacritic: game.metacritic || null,
+          timestamp: now,
+        };
+
+        toCache.push(details);
+        cached.set(appid, details);
+      }
+    }
+
+    // Dexie bulkPut for efficient batch writes
+    if (toCache.length > 0) {
+      await db.gameDetails.bulkPut(toCache);
+    }
+
+    console.log(
+      `[Cache] Batch fetch complete, now have ${cached.size} games cached`
+    );
+  } catch (error) {
+    console.error("[Cache] Error in batch fetch:", error);
+  }
+
+  return cached;
+}
+
+// ============================================
+// Clear Cache Functions
+// ============================================
+
+export async function clearCache(steamId?: string): Promise<void> {
+  try {
+    if (steamId) {
+      await db.games.delete(steamId);
+      await db.personality.delete(steamId);
+    } else {
+      await db.games.clear();
+      await db.personality.clear();
+      await db.gameDetails.clear();
+    }
+  } catch (error) {
+    console.error("Error clearing cache:", error);
+  }
+}
+
+// Get cache statistics
+export async function getCacheStats(): Promise<{
+  gamesCount: number;
+  personalityCount: number;
+  gameDetailsCount: number;
+}> {
+  try {
+    const [gamesCount, personalityCount, gameDetailsCount] = await Promise.all([
+      db.games.count(),
+      db.personality.count(),
+      db.gameDetails.count(),
+    ]);
+    return { gamesCount, personalityCount, gameDetailsCount };
+  } catch (error) {
+    console.error("Error getting cache stats:", error);
+    return { gamesCount: 0, personalityCount: 0, gameDetailsCount: 0 };
+  }
 }
 
 export { generateGamesHash };

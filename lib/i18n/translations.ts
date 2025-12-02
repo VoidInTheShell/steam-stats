@@ -10,7 +10,7 @@ export const translations = {
       personality: "MBTI",
       shame: "Shame",
     },
-    
+
     // Common
     common: {
       loading: "Loading...",
@@ -25,11 +25,12 @@ export const translations = {
       fromCache: "From cache",
       hoursAgo: "hours ago",
     },
-    
+
     // Landing Page
     landing: {
       title: "Steam Stats",
-      subtitle: "Discover insights about your gaming journey. Track playtime, explore your library, and see your gaming habits visualized.",
+      subtitle:
+        "Discover insights about your gaming journey. Track playtime, explore your library, and see your gaming habits visualized.",
       signInWithSteam: "Sign in with Steam",
       feature1Title: "Playtime Analytics",
       feature1Desc: "Track your total hours across all games.",
@@ -39,7 +40,7 @@ export const translations = {
       feature3Desc: "Monitor your latest gaming sessions.",
       poweredBy: "Powered by Steam Web API",
     },
-    
+
     // Dashboard
     dashboard: {
       title: "Dashboard",
@@ -50,7 +51,7 @@ export const translations = {
       recentlyPlayed: "Recently Played",
       topGames: "Top Games by Playtime",
     },
-    
+
     // Library
     library: {
       title: "Game Library",
@@ -63,7 +64,7 @@ export const translations = {
       neverPlayed: "Never played",
       gameCount: "{count} games",
     },
-    
+
     // Timeline
     timeline: {
       title: "Game Timeline",
@@ -86,7 +87,7 @@ export const translations = {
       showMore: "Show More",
       showLess: "Show Less",
     },
-    
+
     // Value Analysis
     value: {
       title: "Value Analysis",
@@ -109,7 +110,7 @@ export const translations = {
       perHour: "/h",
       minPlayed: "min played",
     },
-    
+
     // Charts
     charts: {
       title: "Charts & Statistics",
@@ -125,13 +126,14 @@ export const translations = {
       playtimeDistribution: "Playtime Distribution",
       lastPlayedDistribution: "Last Played Distribution",
     },
-    
+
     // MBTI Personality
     personality: {
       title: "Gaming Personality Analysis",
       subtitle: "MBTI-based gaming personality test",
       discoverYourPersonality: "Discover Your Gaming Personality",
-      analyzeDescription: "Based on your {games} games and {hours} hours of playtime, AI will deeply analyze your MBTI gaming personality type",
+      analyzeDescription:
+        "Based on your {games} games and {hours} hours of playtime, AI will deeply analyze your MBTI gaming personality type",
       startAnalysis: "Start Analysis",
       analyzing: "AI analyzing...",
       reAnalyze: "Re-analyze",
@@ -148,7 +150,8 @@ export const translations = {
       gamingStrengths: "Gaming Strengths",
       needsAttention: "Needs Attention",
       recommendedGenres: "Recommended Genres to Explore",
-      recommendedGenresDesc: "Based on your personality, these genres might give you new experiences",
+      recommendedGenresDesc:
+        "Based on your personality, these genres might give you new experiences",
       aiAdvice: "AI Personalized Advice",
       extraversion: "Extraversion (E)",
       introversion: "Introversion (I)",
@@ -159,7 +162,7 @@ export const translations = {
       judging: "Judging (J)",
       perceiving: "Perceiving (P)",
     },
-    
+
     // Wall of Shame
     shame: {
       title: "Wall of Shame",
@@ -173,14 +176,14 @@ export const translations = {
       playNow: "Play Now",
       unplayedGames: "Unplayed Games",
     },
-    
+
     // Login
     login: {
       signIn: "Sign in with Steam",
       signOut: "Sign out",
     },
   },
-  
+
   zh: {
     // Navigation
     nav: {
@@ -192,7 +195,7 @@ export const translations = {
       personality: "人格",
       shame: "耻辱墙",
     },
-    
+
     // Common
     common: {
       loading: "加载中...",
@@ -207,11 +210,12 @@ export const translations = {
       fromCache: "来自缓存",
       hoursAgo: "小时前",
     },
-    
+
     // Landing Page
     landing: {
       title: "Steam 统计",
-      subtitle: "发现你的游戏之旅。追踪游戏时长，探索你的游戏库，可视化你的游戏习惯。",
+      subtitle:
+        "发现你的游戏之旅。追踪游戏时长，探索你的游戏库，可视化你的游戏习惯。",
       signInWithSteam: "使用 Steam 登录",
       feature1Title: "游戏时长分析",
       feature1Desc: "追踪所有游戏的总时长。",
@@ -221,7 +225,7 @@ export const translations = {
       feature3Desc: "监控最新的游戏活动。",
       poweredBy: "由 Steam Web API 提供支持",
     },
-    
+
     // Dashboard
     dashboard: {
       title: "仪表盘",
@@ -232,7 +236,7 @@ export const translations = {
       recentlyPlayed: "最近游玩",
       topGames: "游戏时长排行",
     },
-    
+
     // Library
     library: {
       title: "游戏库",
@@ -245,7 +249,7 @@ export const translations = {
       neverPlayed: "从未游玩",
       gameCount: "{count} 款游戏",
     },
-    
+
     // Timeline
     timeline: {
       title: "游戏时间线",
@@ -268,7 +272,7 @@ export const translations = {
       showMore: "显示更多",
       showLess: "收起",
     },
-    
+
     // Value Analysis
     value: {
       title: "性价比分析",
@@ -291,7 +295,7 @@ export const translations = {
       perHour: "/小时",
       minPlayed: "分钟游玩",
     },
-    
+
     // Charts
     charts: {
       title: "图表与统计",
@@ -307,13 +311,14 @@ export const translations = {
       playtimeDistribution: "游戏时长分布",
       lastPlayedDistribution: "最后游玩时间分布",
     },
-    
+
     // MBTI Personality
     personality: {
       title: "游戏人格分析",
       subtitle: "基于 MBTI 模型的游戏人格测试",
       discoverYourPersonality: "发现你的游戏人格",
-      analyzeDescription: "基于你的 {games} 款游戏和 {hours} 小时游戏时长，AI 将深度分析你的 MBTI 游戏人格类型",
+      analyzeDescription:
+        "基于你的 {games} 款游戏和 {hours} 小时游戏时长，AI 将深度分析你的 MBTI 游戏人格类型",
       startAnalysis: "开始分析",
       analyzing: "AI 深度分析中...",
       reAnalyze: "重新分析",
@@ -341,7 +346,7 @@ export const translations = {
       judging: "判断 (J)",
       perceiving: "感知 (P)",
     },
-    
+
     // Wall of Shame
     shame: {
       title: "耻辱墙",
@@ -355,7 +360,7 @@ export const translations = {
       playNow: "立即游玩",
       unplayedGames: "未游玩游戏",
     },
-    
+
     // Login
     login: {
       signIn: "使用 Steam 登录",
@@ -365,5 +370,4 @@ export const translations = {
 } as const;
 
 export type Language = keyof typeof translations;
-export type TranslationKeys = typeof translations.en;
-
+export type TranslationKeys = (typeof translations)[Language];

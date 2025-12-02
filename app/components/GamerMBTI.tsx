@@ -39,7 +39,7 @@ import {
 } from "@/lib/cache";
 import { useI18n, interpolate } from "@/lib/i18n";
 import MBTIShareCard, { MBTI_CONFIG } from "./MBTIShareCard";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 
 interface SignatureGame {
   name: string;
@@ -213,10 +213,24 @@ export default function GamerMBTI({ games, genreData }: GamerMBTIProps) {
     }
 
     try {
+      // Fetch user reviews to include in analysis
+      let reviews = null;
+      try {
+        const reviewsRes = await fetch("/api/steam/reviews");
+        if (reviewsRes.ok) {
+          reviews = await reviewsRes.json();
+        }
+      } catch (e) {
+        console.log("Could not fetch reviews:", e);
+      }
+
       const res = await fetch("/api/analyze-personality", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stats),
+        body: JSON.stringify({
+          ...stats,
+          reviews,
+        }),
       });
 
       if (!res.ok) {
@@ -248,15 +262,19 @@ export default function GamerMBTI({ games, genreData }: GamerMBTIProps) {
 
     setGenerating(true);
     try {
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 2,
+      // Wait a bit for images to be converted to data URLs
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const dataUrl = await toPng(shareCardRef.current, {
+        quality: 1,
+        pixelRatio: 2,
         backgroundColor: "#ffffff",
-        logging: false,
+        cacheBust: true,
       });
 
       const link = document.createElement("a");
       link.download = `steam-mbti-${result?.mbtiType || "result"}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error("Error generating image:", err);

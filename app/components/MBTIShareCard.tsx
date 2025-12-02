@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Gamepad2, Sparkles } from "lucide-react";
 
 interface MBTIResult {
@@ -17,7 +17,12 @@ interface MBTIResult {
     subtitle: string;
     description: string;
     strengths: string[];
-    signatureGames: Array<{ name: string; reason: string; genre?: string; category?: string }>;
+    signatureGames: Array<{
+      name: string;
+      reason: string;
+      genre?: string;
+      category?: string;
+    }>;
     gamingStyle: {
       playtimePattern: string;
       decisionMaking: string;
@@ -44,73 +49,224 @@ interface MBTIShareCardProps {
 }
 
 // 16personalities official styling - exported for use in other components
-export const MBTI_CONFIG: Record<string, {
-  name: string;
-  slug: string;
-  color: string;
-  bgColor: string;
-  group: string;
-  groupColor: string;
-}> = {
+export const MBTI_CONFIG: Record<
+  string,
+  {
+    name: string;
+    slug: string;
+    color: string;
+    bgColor: string;
+    group: string;
+  }
+> = {
   // Analysts - Purple
-  INTJ: { name: "建筑师", slug: "intj-architect", color: "#88619a", bgColor: "#f3ebf6", group: "分析家", groupColor: "#88619a" },
-  INTP: { name: "逻辑学家", slug: "intp-logician", color: "#88619a", bgColor: "#f3ebf6", group: "分析家", groupColor: "#88619a" },
-  ENTJ: { name: "指挥官", slug: "entj-commander", color: "#88619a", bgColor: "#f3ebf6", group: "分析家", groupColor: "#88619a" },
-  ENTP: { name: "辩论家", slug: "entp-debater", color: "#88619a", bgColor: "#f3ebf6", group: "分析家", groupColor: "#88619a" },
+  INTJ: {
+    name: "建筑师",
+    slug: "intj-architect",
+    color: "#88619a",
+    bgColor: "#f3ebf6",
+    group: "分析家",
+  },
+  INTP: {
+    name: "逻辑学家",
+    slug: "intp-logician",
+    color: "#88619a",
+    bgColor: "#f3ebf6",
+    group: "分析家",
+  },
+  ENTJ: {
+    name: "指挥官",
+    slug: "entj-commander",
+    color: "#88619a",
+    bgColor: "#f3ebf6",
+    group: "分析家",
+  },
+  ENTP: {
+    name: "辩论家",
+    slug: "entp-debater",
+    color: "#88619a",
+    bgColor: "#f3ebf6",
+    group: "分析家",
+  },
   // Diplomats - Green
-  INFJ: { name: "提倡者", slug: "infj-advocate", color: "#33a474", bgColor: "#e8f6ef", group: "外交家", groupColor: "#33a474" },
-  INFP: { name: "调停者", slug: "infp-mediator", color: "#33a474", bgColor: "#e8f6ef", group: "外交家", groupColor: "#33a474" },
-  ENFJ: { name: "主人公", slug: "enfj-protagonist", color: "#33a474", bgColor: "#e8f6ef", group: "外交家", groupColor: "#33a474" },
-  ENFP: { name: "竞选者", slug: "enfp-campaigner", color: "#33a474", bgColor: "#e8f6ef", group: "外交家", groupColor: "#33a474" },
+  INFJ: {
+    name: "提倡者",
+    slug: "infj-advocate",
+    color: "#33a474",
+    bgColor: "#e8f6ef",
+    group: "外交家",
+  },
+  INFP: {
+    name: "调停者",
+    slug: "infp-mediator",
+    color: "#33a474",
+    bgColor: "#e8f6ef",
+    group: "外交家",
+  },
+  ENFJ: {
+    name: "主人公",
+    slug: "enfj-protagonist",
+    color: "#33a474",
+    bgColor: "#e8f6ef",
+    group: "外交家",
+  },
+  ENFP: {
+    name: "竞选者",
+    slug: "enfp-campaigner",
+    color: "#33a474",
+    bgColor: "#e8f6ef",
+    group: "外交家",
+  },
   // Sentinels - Blue
-  ISTJ: { name: "物流师", slug: "istj-logistician", color: "#4298b4", bgColor: "#e8f4f8", group: "守护者", groupColor: "#4298b4" },
-  ISFJ: { name: "守卫者", slug: "isfj-defender", color: "#4298b4", bgColor: "#e8f4f8", group: "守护者", groupColor: "#4298b4" },
-  ESTJ: { name: "总经理", slug: "estj-executive", color: "#4298b4", bgColor: "#e8f4f8", group: "守护者", groupColor: "#4298b4" },
-  ESFJ: { name: "执政官", slug: "esfj-consul", color: "#4298b4", bgColor: "#e8f4f8", group: "守护者", groupColor: "#4298b4" },
+  ISTJ: {
+    name: "物流师",
+    slug: "istj-logistician",
+    color: "#4298b4",
+    bgColor: "#e8f4f8",
+    group: "守护者",
+  },
+  ISFJ: {
+    name: "守卫者",
+    slug: "isfj-defender",
+    color: "#4298b4",
+    bgColor: "#e8f4f8",
+    group: "守护者",
+  },
+  ESTJ: {
+    name: "总经理",
+    slug: "estj-executive",
+    color: "#4298b4",
+    bgColor: "#e8f4f8",
+    group: "守护者",
+  },
+  ESFJ: {
+    name: "执政官",
+    slug: "esfj-consul",
+    color: "#4298b4",
+    bgColor: "#e8f4f8",
+    group: "守护者",
+  },
   // Explorers - Yellow
-  ISTP: { name: "鉴赏家", slug: "istp-virtuoso", color: "#e4ae3a", bgColor: "#fdf6e3", group: "探险家", groupColor: "#e4ae3a" },
-  ISFP: { name: "探险家", slug: "isfp-adventurer", color: "#e4ae3a", bgColor: "#fdf6e3", group: "探险家", groupColor: "#e4ae3a" },
-  ESTP: { name: "企业家", slug: "estp-entrepreneur", color: "#e4ae3a", bgColor: "#fdf6e3", group: "探险家", groupColor: "#e4ae3a" },
-  ESFP: { name: "表演者", slug: "esfp-entertainer", color: "#e4ae3a", bgColor: "#fdf6e3", group: "探险家", groupColor: "#e4ae3a" },
+  ISTP: {
+    name: "鉴赏家",
+    slug: "istp-virtuoso",
+    color: "#e4ae3a",
+    bgColor: "#fdf6e3",
+    group: "探险家",
+  },
+  ISFP: {
+    name: "探险家",
+    slug: "isfp-adventurer",
+    color: "#e4ae3a",
+    bgColor: "#fdf6e3",
+    group: "探险家",
+  },
+  ESTP: {
+    name: "企业家",
+    slug: "estp-entrepreneur",
+    color: "#e4ae3a",
+    bgColor: "#fdf6e3",
+    group: "探险家",
+  },
+  ESFP: {
+    name: "表演者",
+    slug: "esfp-entertainer",
+    color: "#e4ae3a",
+    bgColor: "#fdf6e3",
+    group: "探险家",
+  },
 };
 
 const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
-  ({ result, totalGames, totalHours, userName, userAvatar, steamId, gameIcons }, ref) => {
+  (
+    {
+      result,
+      totalGames,
+      totalHours,
+      userName,
+      userAvatar,
+      steamId,
+      gameIcons,
+    },
+    ref
+  ) => {
     const config = MBTI_CONFIG[result.mbtiType] || MBTI_CONFIG.INTJ;
-    const avatarUrl = `/mbti/${config.slug}.svg`;
+    const avatarPath = `/mbti/${config.slug}.svg`;
+    const [avatarDataUrl, setAvatarDataUrl] = useState<string>("");
+    const [userAvatarDataUrl, setUserAvatarDataUrl] = useState<string>("");
+    const [gameIconDataUrls, setGameIconDataUrls] = useState<
+      Record<string, string>
+    >({});
+
+    // Convert images to data URLs for html-to-image compatibility
+    useEffect(() => {
+      const loadImage = async (url: string): Promise<string> => {
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          return url;
+        }
+      };
+
+      loadImage(avatarPath).then(setAvatarDataUrl);
+      if (userAvatar) {
+        loadImage(userAvatar).then(setUserAvatarDataUrl);
+      }
+
+      // Load game icons
+      if (gameIcons && result.personality.signatureGames) {
+        const loadGameIcons = async () => {
+          const urls: Record<string, string> = {};
+          for (const game of result.personality.signatureGames.slice(0, 4)) {
+            const iconInfo = gameIcons[game.name];
+            if (iconInfo?.iconUrl) {
+              urls[game.name] = await loadImage(iconInfo.iconUrl);
+            }
+          }
+          setGameIconDataUrls(urls);
+        };
+        loadGameIcons();
+      }
+    }, [avatarPath, userAvatar, gameIcons, result.personality.signatureGames]);
 
     return (
       <div
         ref={ref}
-        className="w-[480px] rounded-2xl overflow-hidden shadow-2xl"
-        style={{ 
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          background: "#ffffff",
-        }}
+        className="w-[480px] rounded-2xl overflow-hidden shadow-2xl bg-white"
+        style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
       >
         {/* Header */}
-        <div 
+        <div
           className="relative overflow-hidden"
-          style={{ background: config.bgColor }}
+          style={{ backgroundColor: config.bgColor }}
         >
           {/* Background pattern */}
-          <div 
+          <div
             className="absolute inset-0 opacity-30"
             style={{
               backgroundImage: `radial-gradient(circle at 100% 0%, ${config.color}22 0%, transparent 50%)`,
             }}
           />
-          
+
           <div className="relative p-6">
             {/* Top bar */}
             <div className="flex items-center justify-between mb-4">
-              <div 
-                className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-                style={{ background: config.color, color: "white" }}
+              <div
+                className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full text-white"
+                style={{ backgroundColor: config.color }}
               >
                 {config.group}
               </div>
-              <div className="flex items-center gap-2 text-sm" style={{ color: config.color }}>
+              <div
+                className="flex items-center gap-2 text-sm"
+                style={{ color: config.color }}
+              >
                 <Gamepad2 className="h-4 w-4" />
                 <span className="font-medium">Steam Stats</span>
               </div>
@@ -120,22 +276,24 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
             <div className="flex items-center gap-5">
               {/* Avatar */}
               <div className="relative">
-                <img 
-                  src={avatarUrl}
-                  alt={result.mbtiType}
-                  className="w-28 h-28 object-contain"
-                />
+                {avatarDataUrl && (
+                  <img
+                    src={avatarDataUrl}
+                    alt={result.mbtiType}
+                    className="w-28 h-28 object-contain"
+                  />
+                )}
               </div>
-              
+
               {/* Info */}
               <div className="flex-1">
-                <h1 
+                <h1
                   className="text-4xl font-bold tracking-wide mb-1"
                   style={{ color: config.color }}
                 >
                   {result.mbtiType}
                 </h1>
-                <p className="text-xl font-semibold text-gray-800 mb-1">
+                <p className="text-xl font-semibold mb-1 text-gray-800">
                   {config.name}
                 </p>
                 <p className="text-sm text-gray-500">
@@ -153,30 +311,32 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
               const leftLetter = key[0];
               const rightLetter = key[1];
               const isLeft = dim.result === leftLetter;
-              
+
               return (
                 <div key={key} className="text-center">
                   <div className="flex justify-center gap-1 mb-1">
-                    <span 
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
-                      style={{ 
-                        background: isLeft ? config.color : "#e5e7eb",
-                        color: isLeft ? "white" : "#9ca3af",
-                      }}
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
+                        isLeft ? "text-white" : "bg-gray-200 text-gray-400"
+                      }`}
+                      style={
+                        isLeft ? { backgroundColor: config.color } : undefined
+                      }
                     >
                       {leftLetter}
                     </span>
-                    <span 
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
-                      style={{ 
-                        background: !isLeft ? config.color : "#e5e7eb",
-                        color: !isLeft ? "white" : "#9ca3af",
-                      }}
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
+                        !isLeft ? "text-white" : "bg-gray-200 text-gray-400"
+                      }`}
+                      style={
+                        !isLeft ? { backgroundColor: config.color } : undefined
+                      }
                     >
                       {rightLetter}
                     </span>
                   </div>
-                  <div 
+                  <div
                     className="text-lg font-bold"
                     style={{ color: config.color }}
                   >
@@ -206,23 +366,29 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
                     className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white border border-gray-100 shadow-sm"
                   >
                     {game.category && (
-                      <span 
-                        className="text-[8px] px-1.5 py-0.5 rounded text-white font-medium mb-0.5"
-                        style={{ background: config.color }}
+                      <span
+                        className="text-[8px] px-1.5 py-0.5 rounded font-medium mb-0.5 text-white"
+                        style={{ backgroundColor: config.color }}
                       >
                         {game.category}
                       </span>
                     )}
-                    {iconInfo?.iconUrl ? (
-                      <img 
-                        src={iconInfo.iconUrl} 
+                    {gameIconDataUrls[game.name] ? (
+                      <img
+                        src={gameIconDataUrls[game.name]}
+                        alt={game.name}
+                        className="w-9 h-9 rounded-lg shadow-sm"
+                      />
+                    ) : iconInfo?.iconUrl ? (
+                      <img
+                        src={iconInfo.iconUrl}
                         alt={game.name}
                         className="w-9 h-9 rounded-lg shadow-sm"
                       />
                     ) : (
-                      <div 
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                        style={{ background: config.color }}
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                        style={{ backgroundColor: config.color }}
                       >
                         {game.name.charAt(0)}
                       </div>
@@ -248,10 +414,13 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
             </div>
             <ul className="space-y-2">
               {result.personality.strengths.slice(0, 3).map((s, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span 
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-sm text-gray-600"
+                >
+                  <span
                     className="w-1.5 h-1.5 rounded-full mt-2 shrink-0"
-                    style={{ background: config.color }}
+                    style={{ backgroundColor: config.color }}
                   />
                   <span className="line-clamp-1">{s}</span>
                 </li>
@@ -261,15 +430,15 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
         )}
 
         {/* Footer */}
-        <div 
+        <div
           className="px-6 py-3 flex items-center justify-between"
-          style={{ background: config.color }}
+          style={{ backgroundColor: config.color }}
         >
           <div className="flex items-center gap-3">
-            {userAvatar && (
-              <img 
-                src={userAvatar} 
-                alt={userName || "User"} 
+            {userAvatarDataUrl && (
+              <img
+                src={userAvatarDataUrl}
+                alt={userName || "User"}
                 className="w-8 h-8 rounded-full border-2 border-white/30"
               />
             )}
@@ -287,7 +456,7 @@ const MBTIShareCard = forwardRef<HTMLDivElement, MBTIShareCardProps>(
               <Gamepad2 className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">steamstats.app</span>
             </div>
-            <p className="text-[10px] text-white/60 mt-0.5">
+            <p className="text-[10px] mt-0.5 text-white/60">
               {totalGames} games · {totalHours.toLocaleString()}h
             </p>
           </div>

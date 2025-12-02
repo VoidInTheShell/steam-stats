@@ -18,6 +18,15 @@ interface GameStats {
   singlePlayerRatio: number;
   indieRatio: number;
   completionRate: number;
+  reviews?: {
+    totalReviews: number;
+    reviews: Array<{
+      gameName: string;
+      recommended: boolean;
+      reviewText: string;
+      hoursPlayed: string;
+    }>;
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -30,6 +39,26 @@ export async function POST(request: NextRequest) {
     const topGenresList = stats.topGenres
       .map((g, i) => `${i + 1}. ${g.name}: ${g.hours}小时, ${g.count}款游戏`)
       .join("\n");
+
+    // Format reviews if available
+    let reviewsSection = "";
+    if (stats.reviews && stats.reviews.reviews.length > 0) {
+      const reviewsList = stats.reviews.reviews
+        .map((r) => {
+          const sentiment = r.recommended ? "👍 推荐" : "👎 不推荐";
+          return `- 《${r.gameName}》(${
+            r.hoursPlayed
+          }小时) ${sentiment}\n  评测摘要: "${r.reviewText.slice(0, 100)}${
+            r.reviewText.length > 100 ? "..." : ""
+          }"`;
+        })
+        .join("\n");
+      reviewsSection = `
+### 玩家评测（重要！反映玩家的思维方式和表达风格）
+- 评测总数：${stats.reviews.totalReviews} 篇
+${reviewsList}
+`;
+    }
 
     const prompt = `你是一位资深的心理学家和游戏行为分析师，精通MBTI人格理论。请根据以下Steam游戏库数据，深度分析这位玩家的MBTI人格类型。
 
@@ -54,17 +83,19 @@ ${topGenresList}
 
 ### 游玩时间最长的游戏（重要参考）
 ${topGamesList}
-
+${reviewsSection}
 ## 分析要求
 
-请基于以上数据，特别是玩家最常玩的具体游戏，从以下四个维度深度分析该玩家的MBTI类型：
+请基于以上数据，特别是玩家最常玩的具体游戏和评测内容，从以下四个维度深度分析该玩家的MBTI类型：
 
 1. **E/I (外向/内向)**：考虑游戏选择是否倾向社交互动（如MMO、多人竞技）还是独自探索（如单机RPG、模拟经营）
 2. **S/N (感知/直觉)**：考虑是否偏好具体实际的游戏（如体育、模拟器）还是抽象创意的游戏（如策略、独立艺术游戏）
-3. **T/F (思考/情感)**：考虑是否偏好逻辑策略游戏（如战棋、RTS）还是故事情感驱动的游戏（如视觉小说、剧情RPG）
+3. **T/F (思考/情感)**：考虑是否偏好逻辑策略游戏（如战棋、RTS）还是故事情感驱动的游戏（如视觉小说、剧情RPG）；同时参考评测的写作风格——是理性分析型还是情感表达型
 4. **J/P (判断/感知)**：考虑游戏完成度、是否专注少数游戏深度游玩还是广泛尝试各种游戏
 
-**重要**：在分析中，请务必引用玩家实际游玩的具体游戏名称作为证据支撑你的分析。
+**重要**：
+- 在分析中，请务必引用玩家实际游玩的具体游戏名称作为证据支撑你的分析
+- 如果有评测数据，请特别关注评测的写作风格、关注点和表达方式，这能深刻反映玩家的思维模式
 
 **代表游戏选择要求**：
 - 必须从玩家游戏库中选择，且必须来自**不同的游戏类型/类别**
@@ -121,7 +152,7 @@ ${topGamesList}
 }`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",
