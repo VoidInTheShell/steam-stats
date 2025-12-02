@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DollarSign, TrendingUp, TrendingDown, Award, AlertTriangle, Loader2, Sparkles, ThumbsDown } from "lucide-react";
+import { getCachedGameDetails, setCachedGameDetails } from "@/lib/cache";
 
 interface GameWithPrice extends SteamGame {
   price?: number;
@@ -15,9 +16,6 @@ interface GameWithPrice extends SteamGame {
 interface ValueAnalysisProps {
   games: SteamGame[];
 }
-
-// Price cache
-const priceCache = new Map<number, number | null>();
 
 export default function ValueAnalysis({ games }: ValueAnalysisProps) {
   const [gamesWithPrices, setGamesWithPrices] = useState<GameWithPrice[]>([]);
@@ -39,9 +37,11 @@ export default function ValueAnalysis({ games }: ValueAnalysisProps) {
       for (const game of topGames) {
         let price: number | null = null;
         
-        // Check cache
-        if (priceCache.has(game.appid)) {
-          price = priceCache.get(game.appid)!;
+        // Check IDB cache first
+        const cached = await getCachedGameDetails(game.appid);
+        
+        if (cached && cached.price !== undefined) {
+          price = cached.price;
         } else {
           try {
             const res = await fetch(`/api/steam/app/${game.appid}`);
@@ -52,14 +52,21 @@ export default function ValueAnalysis({ games }: ValueAnalysisProps) {
               } else if (data.is_free) {
                 price = 0;
               }
-              priceCache.set(game.appid, price);
+              
+              // Save to IDB cache
+              await setCachedGameDetails(
+                game.appid,
+                data.genres?.map((g: { description: string }) => g.description) || [],
+                price,
+                data.developers || [],
+                data.metacritic || null
+              );
             }
+            // Small delay to avoid rate limiting (only for API calls)
+            await new Promise(resolve => setTimeout(resolve, 100));
           } catch (err) {
             console.error(`Failed to fetch price for ${game.name}:`, err);
           }
-          
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         const playtimeHours = game.playtime_forever / 60;

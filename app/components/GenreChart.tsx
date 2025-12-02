@@ -13,6 +13,7 @@ import {
 import { SteamGame } from "../types/steam";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Tags, Info } from "lucide-react";
+import { getCachedGameDetails, setCachedGameDetails } from "@/lib/cache";
 
 const GENRE_COLORS: Record<string, string> = {
   "Action": "#ef4444",
@@ -47,9 +48,6 @@ interface GenreData {
   color: string;
 }
 
-// Cache for genre data
-const genreCache = new Map<number, string[]>();
-
 interface GenreChartProps {
   games: SteamGame[];
 }
@@ -74,11 +72,12 @@ export default function GenreChart({ games }: GenreChartProps) {
 
       // Fetch genres for each game
       for (const game of topGames) {
-        // Check cache first
-        if (genreCache.has(game.appid)) {
-          const genres = genreCache.get(game.appid)!;
+        // Check IDB cache first
+        const cached = await getCachedGameDetails(game.appid);
+        
+        if (cached) {
           const hours = game.playtime_forever / 60;
-          genres.forEach(genre => {
+          cached.genres.forEach(genre => {
             const existing = genreMap.get(genre) || { hours: 0, gameCount: 0 };
             genreMap.set(genre, { 
               hours: existing.hours + hours, 
@@ -91,7 +90,15 @@ export default function GenreChart({ games }: GenreChartProps) {
             if (res.ok) {
               const data = await res.json();
               const genres = data.genres?.map((g: { description: string }) => g.description) || ["Other"];
-              genreCache.set(game.appid, genres);
+              
+              // Save to IDB cache
+              await setCachedGameDetails(
+                game.appid,
+                genres,
+                data.price_overview?.final ? data.price_overview.final / 100 : (data.is_free ? 0 : null),
+                data.developers || [],
+                data.metacritic || null
+              );
               
               const hours = game.playtime_forever / 60;
               genres.forEach((genre: string) => {
@@ -102,6 +109,8 @@ export default function GenreChart({ games }: GenreChartProps) {
                 });
               });
             }
+            // Small delay to avoid rate limiting (only for API calls)
+            await new Promise(resolve => setTimeout(resolve, 100));
           } catch (err) {
             console.error(`Failed to fetch genre for ${game.name}:`, err);
           }
@@ -109,11 +118,6 @@ export default function GenreChart({ games }: GenreChartProps) {
         
         completed++;
         setProgress(Math.round((completed / topGames.length) * 100));
-        
-        // Small delay to avoid rate limiting
-        if (!genreCache.has(game.appid)) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
       }
 
       // Convert to array and sort by hours

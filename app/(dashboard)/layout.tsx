@@ -5,17 +5,20 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LoginButton from "../components/LoginButton";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { GamesProvider } from "../components/GamesProvider";
-import { Loader2, LayoutDashboard, List, PieChart, Skull, Gamepad2, DollarSign, Clock } from "lucide-react";
+import { Loader2, LayoutDashboard, List, PieChart, Skull, Gamepad2, DollarSign, Clock, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
-const navItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/library", label: "Library", icon: List },
-  { href: "/timeline", label: "Timeline", icon: Clock },
-  { href: "/value", label: "Value", icon: DollarSign },
-  { href: "/charts", label: "Charts", icon: PieChart },
-  { href: "/shame", label: "Shame", icon: Skull },
+const navItemsConfig = [
+  { href: "/dashboard", labelKey: "overview" as const, icon: LayoutDashboard },
+  { href: "/library", labelKey: "library" as const, icon: List },
+  { href: "/timeline", labelKey: "timeline" as const, icon: Clock },
+  { href: "/value", labelKey: "value" as const, icon: DollarSign },
+  { href: "/charts", labelKey: "charts" as const, icon: PieChart },
+  { href: "/personality", labelKey: "personality" as const, icon: Brain },
+  { href: "/shame", labelKey: "shame" as const, icon: Skull },
 ];
 
 export default function DashboardLayout({
@@ -25,6 +28,7 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const { t } = useI18n();
 
   if (status === "loading") {
     return (
@@ -54,9 +58,10 @@ export default function DashboardLayout({
 
             {/* Nav Links */}
             <nav className="flex items-center gap-1">
-              {navItems.map((item) => {
+              {navItemsConfig.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
+                const label = t.nav[item.labelKey];
                 return (
                   <Link
                     key={item.href}
@@ -69,14 +74,17 @@ export default function DashboardLayout({
                     )}
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="hidden md:inline">{item.label}</span>
+                    <span className="hidden md:inline">{label}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            {/* User Info */}
-            <LoginButton />
+            {/* User Info & Language Switcher */}
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <LoginButton />
+            </div>
           </div>
         </div>
       </header>

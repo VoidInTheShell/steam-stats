@@ -3,11 +3,14 @@
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import LoginButton from "./components/LoginButton";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Trophy, Gamepad2, TrendingUp, Sparkles, Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const { t } = useI18n();
 
   if (status === "loading") {
     return (
@@ -23,6 +26,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background relative overflow-hidden">
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher />
+      </div>
+
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
@@ -42,11 +50,11 @@ export default function Home() {
           <div className="space-y-4">
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight">
               <span className="bg-gradient-to-r from-foreground via-primary to-blue-500 bg-clip-text text-transparent">
-                Steam Stats
+                {t.landing.title}
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Discover insights about your gaming journey. Track playtime, explore your library, and see your gaming habits visualized.
+              {t.landing.subtitle}
             </p>
           </div>
 
@@ -62,9 +70,9 @@ export default function Home() {
                 <div className="inline-flex items-center justify-center p-2 rounded-lg bg-blue-500/10">
                   <Clock className="h-5 w-5 text-blue-500" />
                 </div>
-                <h3 className="font-semibold">Playtime Analytics</h3>
+                <h3 className="font-semibold">{t.landing.feature1Title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Track your total hours across all games
+                  {t.landing.feature1Desc}
                 </p>
               </CardContent>
             </Card>
@@ -74,9 +82,9 @@ export default function Home() {
                 <div className="inline-flex items-center justify-center p-2 rounded-lg bg-amber-500/10">
                   <Trophy className="h-5 w-5 text-amber-500" />
                 </div>
-                <h3 className="font-semibold">Top Games</h3>
+                <h3 className="font-semibold">{t.landing.feature2Title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  See which games you love the most
+                  {t.landing.feature2Desc}
                 </p>
               </CardContent>
             </Card>
@@ -86,9 +94,9 @@ export default function Home() {
                 <div className="inline-flex items-center justify-center p-2 rounded-lg bg-green-500/10">
                   <TrendingUp className="h-5 w-5 text-green-500" />
                 </div>
-                <h3 className="font-semibold">Recent Activity</h3>
+                <h3 className="font-semibold">{t.landing.feature3Title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Monitor your latest gaming sessions
+                  {t.landing.feature3Desc}
                 </p>
               </CardContent>
             </Card>
@@ -98,7 +106,7 @@ export default function Home() {
         {/* Footer hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4" />
-          <span>Powered by Steam Web API</span>
+          <span>{t.landing.poweredBy}</span>
         </div>
       </div>
     </main>

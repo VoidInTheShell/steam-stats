@@ -4,9 +4,11 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Gamepad2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function LoginButton() {
   const { data: session } = useSession();
+  const { t } = useI18n();
 
   if (session) {
     return (
@@ -24,7 +26,7 @@ export default function LoginButton() {
             className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left flex items-center gap-1"
           >
             <LogOut className="h-3 w-3" />
-            Sign out
+            {t.login.signOut}
           </button>
         </div>
       </div>
@@ -39,7 +41,7 @@ export default function LoginButton() {
       className="gap-3"
     >
       <Gamepad2 className="h-5 w-5" />
-      Sign in with Steam
+      {t.login.signIn}
     </Button>
   );
 }
