@@ -15,6 +15,7 @@ import {
   Skull
 } from "lucide-react";
 import Link from "next/link";
+import GameCollage from "../../components/GameCollage";
 
 export default function DashboardPage() {
   const games = useGamesStore((s) => s.games);
@@ -80,6 +81,15 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Game Collage */}
+      {games.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <GameCollage games={games} maxGames={120} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

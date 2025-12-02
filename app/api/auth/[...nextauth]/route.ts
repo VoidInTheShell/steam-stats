@@ -12,6 +12,9 @@ async function handler(
         clientSecret: process.env.STEAM_SECRET!,
       }),
     ],
+    pages: {
+      error: "/auth/error",
+    },
     callbacks: {
       async session({ session, token }) {
         if (session?.user) {
