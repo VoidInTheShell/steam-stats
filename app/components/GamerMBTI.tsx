@@ -75,6 +75,11 @@ interface MBTIResult {
     gamingStyle: GamingStyle;
     advice: string;
   };
+  shareCard?: {
+    tagline: string;
+    summary: string;
+    highlights: string[];
+  };
 }
 
 interface GamerMBTIProps {
