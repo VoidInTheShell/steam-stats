@@ -174,8 +174,7 @@ Return JSON in Chinese (中文回复):
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 16000,
-      timeout: 60000,
+      max_tokens: 16000
     });
 
     console.log(`[API] OpenAI request completed`);
