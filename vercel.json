@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/analyze-personality/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
